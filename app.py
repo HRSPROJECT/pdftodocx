@@ -68,7 +68,6 @@ def pdf_to_docx(pdf_path, docx_path, searchable=True):
 
         document.save(docx_path)  # Save the DOCX
         print(f"Non-searchable DOCX saved: {docx_path}")
-
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -78,8 +77,16 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
+
 def main():
-    st.title("PDF to DOCX Converter")
+    st.title("PDF to DOCX")  # Changed the title here
+
+    st.markdown(
+        """
+        <a href="https://hrsproject.github.io/home/" target="_blank">Explore More</a>
+        """,
+        unsafe_allow_html=True,
+    )
     
     uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
     
