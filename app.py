@@ -162,13 +162,13 @@ def convert_pdf_to_docx(pdf_file):
         document = Document()
         for page_num in range(len(pdf_document)):
             page = pdf_document[page_num]
-            pix = page.get_pixmap() #Gets pixmap of each page
-            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples) #Makes image from pixmap
-            temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False) #Creates a temporary file for the image
-            image.save(temp_file, format='png') #saves the temp file as png
-            document.add_picture(temp_file.name, width=8) #Adds the file to the docx document
-            temp_file.close() #closes the temp file
-            os.unlink(temp_file.name)  # Use os.unlink() to remove the file
+            pix = page.get_pixmap()
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+            image.save(temp_file, format='png')
+            document.add_picture(temp_file.name, width=8)  # Corrected line: use temp_file.name
+            temp_file.close()
+            os.unlink(temp_file.name)
         return document
     except Exception as e:
         st.error(f"Error converting PDF directly to DOCX: {e}")
