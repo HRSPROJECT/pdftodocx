@@ -6,6 +6,7 @@ import base64
 import pdfplumber
 from PIL import Image
 import tempfile
+import os
 
 # CSS to hide Streamlit elements
 hide_st_style = """
@@ -167,7 +168,7 @@ def convert_pdf_to_docx(pdf_file):
             image.save(temp_file, format='png') #saves the temp file as png
             document.add_picture(temp_file.name, width=8) #Adds the file to the docx document
             temp_file.close() #closes the temp file
-            temp_file.unlink(temp_file.name) #Delete the file
+            os.unlink(temp_file.name)  # Use os.unlink() to remove the file
         return document
     except Exception as e:
         st.error(f"Error converting PDF directly to DOCX: {e}")
