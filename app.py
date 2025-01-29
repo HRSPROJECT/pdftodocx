@@ -4,7 +4,8 @@ from docx import Document
 import fitz  # PyMuPDF
 import base64
 import pdfplumber
-
+from PIL import Image
+import tempfile
 
 # CSS to hide Streamlit elements
 hide_st_style = """
@@ -35,9 +36,9 @@ def create_theme_css(theme):
                 .stButton>button:hover {
                     background-color: #555;
                 }
-                .css-1q8dd3f {
+                 .css-1q8dd3f {
                      background-color: #222 !important;
-                     border-color: #555 !important;
+                    border-color: #555 !important;
                  }
                   .css-2y7684 {
                     background-color: #222 !important;
@@ -50,10 +51,9 @@ def create_theme_css(theme):
                 .stRadio > div > label {
                     color: white;
                 }
-                .css-1h5jfnv p{
+               .css-1h5jfnv p{
                   color: white;
                 }
-
                 .css-10trblm > div > div > input{
                     background-color: #222;
                     color: white;
@@ -61,6 +61,9 @@ def create_theme_css(theme):
                 .css-10trblm > div > div > input::placeholder{
                    color: #666;
                 }
+                 .css-keje6a, .css-13sd3d5 {
+                     background-color: #222 !important;
+                 }
             </style>
             """
     else:
@@ -86,7 +89,7 @@ def create_theme_css(theme):
                     background-color: #fff !important;
                     color: black;
                 }
-               .stTextInput > div > div > input{
+                .stTextInput > div > div > input{
                   background-color: white;
                   color: black;
                }
@@ -96,7 +99,6 @@ def create_theme_css(theme):
                 .css-1h5jfnv p{
                   color: black;
                 }
-
                 .css-10trblm > div > div > input{
                     background-color: white;
                     color: black;
@@ -104,8 +106,12 @@ def create_theme_css(theme):
                  .css-10trblm > div > div > input::placeholder{
                    color: #999;
                  }
+                  .css-keje6a, .css-13sd3d5{
+                      background-color: #fff !important;
+                  }
             </style>
             """
+
 
 # Function to create the navigation bar
 def create_navbar(theme):
@@ -116,6 +122,7 @@ def create_navbar(theme):
         </nav>
     """
     st.markdown(navbar_style, unsafe_allow_html=True)
+
 
 # Function to create a download button that includes preview
 def create_download_button(docx_stream, file_name, preview_text, theme):
@@ -131,6 +138,7 @@ def create_download_button(docx_stream, file_name, preview_text, theme):
         file_name=file_name,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
+
 
 # Function for OCR text extraction
 def extract_text_from_pdf_ocr(pdf_file):
@@ -149,13 +157,17 @@ def extract_text_from_pdf_ocr(pdf_file):
 def convert_pdf_to_docx(pdf_file):
     """Converts a PDF directly to DOCX without OCR (non-searchable text)."""
     try:
-        pdf_document = fitz.open(stream=pdf_file.read(), filetype="pdf") #Open pdf using pymupdf
-        document = Document() #Create new document object
-        for page_num in range(len(pdf_document)): #Loop for each pdf page
+        pdf_document = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        document = Document()
+        for page_num in range(len(pdf_document)):
             page = pdf_document[page_num]
-            pix = page.get_pixmap() #Get the pix map from the page.
-            image_stream = io.BytesIO(pix.tobytes())  # Convert pixmap to bytes stream
-            document.add_picture(image_stream, width=8) #Add image to word document
+            pix = page.get_pixmap() #Gets pixmap of each page
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples) #Makes image from pixmap
+            temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False) #Creates a temporary file for the image
+            image.save(temp_file, format='png') #saves the temp file as png
+            document.add_picture(temp_file.name, width=8) #Adds the file to the docx document
+            temp_file.close() #closes the temp file
+            temp_file.unlink(temp_file.name) #Delete the file
         return document
     except Exception as e:
         st.error(f"Error converting PDF directly to DOCX: {e}")
@@ -170,7 +182,6 @@ def create_docx(text):
 
 
 def main():
-
     # Initialize theme in session state
     if "theme" not in st.session_state:
        st.session_state.theme = "light"
@@ -184,7 +195,6 @@ def main():
     # Apply theme CSS
     st.markdown(create_theme_css(st.session_state.theme), unsafe_allow_html=True)
     create_navbar(st.session_state.theme)
-
 
     st.title("PDF to DOCX Converter")
     ocr_option = st.radio("Choose Conversion Option:", ["Perform OCR (Searchable Text)", "Direct Conversion (Non-searchable Text)"])
