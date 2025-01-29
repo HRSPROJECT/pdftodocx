@@ -1,9 +1,10 @@
-import streamlit as st
 import fitz
 import os
 from docx import Document
 from docx.shared import Inches
 import tempfile
+import io
+
 
 def pdf_to_docx(pdf_path, docx_path, searchable=True):
     """Converts a PDF to DOCX.
@@ -28,10 +29,11 @@ def pdf_to_docx(pdf_path, docx_path, searchable=True):
             mat = fitz.Matrix(zoom_factor, zoom_factor)
             pix = page.get_pixmap(matrix=mat)
             
-            # Save the image in memory instead of using filesystem
+            # Save the image in memory using io.BytesIO
             image_bytes = pix.tobytes("png")
+            image_stream = io.BytesIO(image_bytes)
             
-            document.add_picture(image_bytes, width=Inches(6.5))
+            document.add_picture(image_stream, width=Inches(6.5))
 
         document.save(docx_path)  # Save the DOCX
 
@@ -44,44 +46,10 @@ def pdf_to_docx(pdf_path, docx_path, searchable=True):
             mat = fitz.Matrix(zoom_factor, zoom_factor)
             pix = page.get_pixmap(matrix=mat)
             
-            # Save the image in memory instead of using filesystem
+            # Save the image in memory using io.BytesIO
             image_bytes = pix.tobytes("png")
+            image_stream = io.BytesIO(image_bytes)
             
-            document.add_picture(image_bytes, width=Inches(6.5))
+            document.add_picture(image_stream, width=Inches(6.5))
 
         document.save(docx_path)  # Save the DOCX
-        
-def main():
-    st.title("PDF to DOCX Converter")
-    
-    uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-    
-    if uploaded_file is not None:
-        searchable = st.checkbox("Make Text Searchable (OCR)")
-        
-        if st.button("Convert to DOCX"):
-            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
-                tmp_file.write(uploaded_file.read())
-                pdf_path = tmp_file.name
-            
-            docx_path = os.path.splitext(pdf_path)[0] + ".docx"
-            
-            with st.spinner("Converting..."):
-                pdf_to_docx(pdf_path, docx_path, searchable=searchable)
-
-            with open(docx_path, "rb") as file:
-                docx_bytes = file.read()
-            
-            os.unlink(pdf_path)  # Delete the temporary PDF file
-            os.unlink(docx_path)  # Delete the temporary DOCX file
-
-            st.download_button(
-                label="Download DOCX",
-                data=docx_bytes,
-                file_name=os.path.splitext(uploaded_file.name)[0] + ".docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-
-
-if __name__ == "__main__":
-    main()
