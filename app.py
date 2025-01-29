@@ -5,7 +5,7 @@ from docx import Document
 from docx.shared import Inches
 import tempfile
 import io
-
+import base64
 
 def pdf_to_docx(pdf_path, docx_path, searchable=True):
     """Converts a PDF to DOCX."""
@@ -68,19 +68,11 @@ def pdf_to_docx(pdf_path, docx_path, searchable=True):
 
         document.save(docx_path)  # Save the DOCX
         print(f"Non-searchable DOCX saved: {docx_path}")
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
 
 
 def main():
-    st.title("PDF to DOCX")  # Changed the title here
-
+    st.title("PDF to DOCX")
+    
     st.markdown(
         """
         <a href="https://hrsproject.github.io/home/" target="_blank">Explore More</a>
@@ -110,13 +102,17 @@ def main():
             
             os.unlink(pdf_path)  # Delete the temporary PDF file
             os.unlink(docx_path)  # Delete the temporary DOCX file
-              
+
             st.download_button(
               label="Download DOCX",
               data=docx_bytes,
               file_name=os.path.splitext(uploaded_file.name)[0] + ".docx",
               mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+            
+            # Create a text link for sharing (This is a basic share option)
+            st.markdown(f"**Shareable Link:** This shareable link is for demo purpose only: [generated.docx](data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{base64.b64encode(docx_bytes).decode()})")
+            
             print("Download button displayed")
           except Exception as e:
              print(f"Error during conversion or download: {e}")
