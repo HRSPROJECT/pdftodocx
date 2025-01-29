@@ -5,7 +5,50 @@ from docx import Document
 from docx.shared import Inches
 import tempfile
 import io
-import base64
+import requests  # To interact with the cloud storage API
+import json
+import urllib.parse
+
+# --- Function to upload a file and generate a shareable link
+def upload_to_cloud(file_path, filename):
+    """Placeholder for actual cloud upload logic."""
+    # Replace with your actual API endpoint, headers, parameters, etc.
+    # This is just an example; you need your own service
+    
+    cloud_api_endpoint = "YOUR_CLOUD_UPLOAD_API_ENDPOINT"
+    # IMPORTANT: Add your api key to avoid unauthorized usage.
+    api_key = "YOUR_API_KEY"
+
+    try:
+      with open(file_path, 'rb') as f:
+          files = {'file': (filename, f)}  
+          headers = {'Authorization': f'Bearer {api_key}'}
+          
+          response = requests.post(cloud_api_endpoint, files=files, headers=headers)
+          
+          response.raise_for_status() # Raise exception for bad status codes
+          
+          response_json = response.json()
+          shareable_link = response_json.get('url')
+          
+          if not shareable_link:
+              raise ValueError("No 'url' found in the response from the cloud API.")
+          
+          print(f"Successfully uploaded to cloud. Link:{shareable_link}")
+          return shareable_link
+    
+    except requests.exceptions.RequestException as e:
+          print(f"Error connecting to cloud service: {e}")
+          return None
+
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        return None
+    
+    except ValueError as e:
+        print(f"Error on response from cloud service: {e}")
+        return None
+
 
 def pdf_to_docx(pdf_path, docx_path, searchable=True):
     """Converts a PDF to DOCX."""
@@ -68,14 +111,7 @@ def pdf_to_docx(pdf_path, docx_path, searchable=True):
 
         document.save(docx_path)  # Save the DOCX
         print(f"Non-searchable DOCX saved: {docx_path}")
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+
 
 def main():
     st.title("PDF to DOCX")
@@ -103,26 +139,31 @@ def main():
             
             with st.spinner("Converting..."):
                 pdf_to_docx(pdf_path, docx_path, searchable=searchable)
-                
-            with open(docx_path, "rb") as file:
-              docx_bytes = file.read()
-            
-            os.unlink(pdf_path)  # Delete the temporary PDF file
-            os.unlink(docx_path)  # Delete the temporary DOCX file
 
-            st.download_button(
-              label="Download DOCX",
-              data=docx_bytes,
-              file_name=os.path.splitext(uploaded_file.name)[0] + ".docx",
-              mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+            # Upload the file and get the shareable link
+            shareable_link = upload_to_cloud(docx_path, os.path.basename(docx_path))
+
+            # Delete the local DOCX file
+            os.unlink(docx_path)  
+            os.unlink(pdf_path)
             
-            # Create a text link for sharing (This is a basic share option)
-            st.markdown(f"**Shareable Link:** This shareable link is for demo purpose only: [generated.docx](data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{base64.b64encode(docx_bytes).decode()})")
+            if shareable_link:
+                # Create the WhatsApp share link
+                whatsapp_message = f"Download your DOCX file here: {shareable_link}"
+                whatsapp_link = f"https://wa.me/?text={urllib.parse.quote(whatsapp_message)}"
+                
+                st.markdown(
+                    f"""
+                    <a href="{whatsapp_link}" target="_blank">Share on WhatsApp</a>
+                    """,
+                   unsafe_allow_html=True
+                )
             
-            print("Download button displayed")
+            else:
+                st.error("Error creating shareable link.")
+
           except Exception as e:
-             print(f"Error during conversion or download: {e}")
+             print(f"Error during conversion or upload: {e}")
 
 
 if __name__ == "__main__":
