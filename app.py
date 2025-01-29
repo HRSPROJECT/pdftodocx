@@ -164,11 +164,9 @@ def convert_pdf_to_docx(pdf_file):
             page = pdf_document[page_num]
             pix = page.get_pixmap()
             image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-            image.save(temp_file, format='png')
-            document.add_picture(temp_file.name, width=8)  # Corrected line: use temp_file.name
-            temp_file.close()
-            os.unlink(temp_file.name)
+            image_stream = io.BytesIO() #Create new bytes stream
+            image.save(image_stream, format="png") # Save the image in the byte stream
+            document.add_picture(image_stream, width=8) # Add the byte stream to the docx document
         return document
     except Exception as e:
         st.error(f"Error converting PDF directly to DOCX: {e}")
